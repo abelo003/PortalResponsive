@@ -7,8 +7,6 @@
 <title>Insert title here</title>
 </head>
 <body>
-	<h1>Inicio</h1>
-	<a href="login">Say Hello</a>
-	
+	${message}
 </body>
 </html>
