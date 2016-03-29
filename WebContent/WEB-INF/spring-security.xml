@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:sec="http://www.springframework.org/schema/security"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:oauth="http://www.springframework.org/schema/security/oauth"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    
+    xsi:schemaLocation="http://www.springframework.org/schema/beans 
+    http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+    http://www.springframework.org/schema/security/oauth
+    http://www.springframework.org/schema/security/spring-security-oauth.xsd
+    http://www.springframework.org/schema/security
+    http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+    
+    <!--Se define la seguridad para las carpetas estáticas-->
+    <sec:http security="none" pattern="/login*" />
+    <sec:http security="none" pattern="/css/**" />
+    <sec:http security="none" pattern="/images/**" />
+    <sec:http security="none" pattern="/js/**" />
+    <sec:http security="none" pattern="/fonts/**" />
+    
+    <sec:http use-expressions="true" 
+          access-denied-page="/error403" 
+          disable-url-rewriting="true" 
+          create-session="always" 
+          entry-point-ref="authenticationEntryPoint"
+          auto-config="true">
+        
+        <sec:custom-filter position="CONCURRENT_SESSION_FILTER" ref="concurrencyFilter" />
+        <sec:session-management session-authentication-strategy-ref="sas"/>
+<!--        <session-management invalid-session-url="/sessionexpired" session-fixation-protection="newSession" >
+            <concurrency-control error-if-maximum-exceeded="true" max-sessions="1" expired-url="/sessionexpired"/>
+        </session-management>-->
+        <!--login-page="/login"-->
+        <!--authentication-failure-url="/login?err=1"-->
+        <!--default-target-url="/"-->
+        <!--always-use-default-target="true"--> 
+        <sec:form-login login-processing-url="/auth"
+                    username-parameter="username" password-parameter="password"
+                    authentication-success-handler-ref="authenticationSuccessHandler"
+                    authentication-failure-handler-ref="authenticationFailureHandler"
+        />
+        <sec:logout logout-url="/logout"
+                delete-cookies="JSESSIONID" 
+                invalidate-session="true"
+                success-handler-ref="logoutSuccessHandler"
+        />
+        <!--<sec:intercept-url pattern="/sessionexpired" access="permitAll" />-->
+        <sec:intercept-url pattern="/auth" access="permitAll" />
+        <sec:intercept-url pattern="/login" access="permitAll" />
+        <sec:intercept-url pattern="/Handler" access="permitAll" />
+        <sec:headers>
+            <sec:cache-control/>
+        </sec:headers>
+    </sec:http>
+    
+    <sec:authentication-manager alias="authenticationManager">
+        <sec:authentication-provider ref="myAuthenticationProvider"/>
+    </sec:authentication-manager>
+    
+    <bean id="authenticationEntryPoint"  class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint">
+        <property name="loginFormUrl" value="/login"/>
+    </bean>
+
+    <!--Autenticacion personalizada-->
+    <bean id="authenticationManager" class="org.springframework.security.authentication.ProviderManager">
+        <property name="providers">
+            <list>
+                <ref bean="myAuthenticationProvider" />
+            </list>
+        </property>
+    </bean>
+    
+     <!--Clase de encriptacion-->
+    <bean id="shaPasswordEncoder" class="org.springframework.security.authentication.encoding.ShaPasswordEncoder"/>
+    
+    <bean id="myAuthenticationProvider" class="com.sigsa.sisbc.config.MyAuthenticationProvider">
+        <property name="userServiceQuery" ref="customJDBCDaoImpl" />
+        <property name="usuarioConIntentoFallido" ref="usuarioConIntentoFallido"/>
+        <property name="intentosPosibles" value="${lockoutuser.intentos}"/>
+        <property name="listUsersLockoutIntentFail" ref="listUsersLockoutIntentFail"/>
+        <property name="shaPasswordEncoder" ref="shaPasswordEncoder"/>
+        <property name="sessionRegistry" ref="sessionRegistry"/>
+        <property name="requestNodeJS" ref="requestNodeJS"/>
+    </bean>
+    
+    <bean id="customJDBCDaoImpl" class="com.sigsa.sisbc.config.CustomJDBCDaoImpl">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="queryByUsername" value="select [username], [password] , [enabled] from [dbo].[sis_usuario] where [username] = ?"/>
+        <property name="queryByAuthoritiesUsername" value="select [username], [role_name] as [authority] 
+                from [sis_usuario] as u 
+                inner join [rel_rolusuario] as rl on [u].[oid_sis_usuario] = [rl].[oid_sis_usuario] 
+                inner join [cat_rol] as r on [rl].[oid_role] = [r].[oid_role] 
+                where [u].[username] = ? 
+                order by [r].[ROLE_NAME]
+        "/>
+    </bean>
+    
+    <!--Control de intentos fallidos-->
+    <!--Lista de usuarios bloqueados-->
+    <bean id="listUsersBlocked" class="com.sigsa.sisbc.config.ListUsersBlocked" scope="singleton"/>
+    <!--Comportamiento de la lista de usuarios con intento fallido-->
+    <bean id="usuarioConIntentoFallido" class="com.sigsa.sisbc.config.UsuarioConIntentoFallido" />
+    <!--Lista de los usuaarios bloqueados (ya tienen el límite de intentos permitidos)-->
+    <bean id="listUsersLockoutIntentFail" class="com.sigsa.sisbc.config.ListUsersLockoutIntentFail" autowire="byName"/>
+    <!--Filtro para el logout-->
+    <bean id="logoutSuccessHandler" name="logoutSuccessHandler" class="com.sigsa.sisbc.config.ItemBasedLogoutSuccessHandler">
+        <property name="requestNodeJS" ref="requestNodeJS"/>
+    </bean>
+    <!--Inicio de sesión exitoso-->
+    <bean id="authenticationSuccessHandler" class="com.sigsa.sisbc.config.ItemIdBasedAuthenticationSuccessHandler">
+        <property name="defaultTargetUrl" value="/"/>
+        <!--Beans para la busqueda de las herramientas el iniciar sesión exitosamente-->
+        <property name="obtenerHerrDptosByUser" ref="obtenerHerrDptosByUser"/>
+        <property name="mensajesBandejaDaoImp" ref="mensajesBandejaDaoImp"/>
+    </bean>
+    <!--Inicio de sesión fallido-->
+    <bean id="authenticationFailureHandler" class="com.sigsa.sisbc.config.ItemBasedAuthenticationFailureHandler" >
+        <property name="usuarioConIntentoFallido" ref="usuarioConIntentoFallido"/>
+        <property name="listUsersLockoutIntentFail" ref="listUsersLockoutIntentFail"/>
+        <property name="tiempoLockout" value="${lockoutuser.tiempo}"/>
+        <property name="sessionFailDaoImp" ref="sessionFailDaoImp"/>
+    </bean>
+    
+    <!--Filtro de concurencia-->
+    <bean id="concurrencyFilter" class="org.springframework.security.web.session.ConcurrentSessionFilter">
+        <property name="sessionRegistry" ref="sessionRegistry" />
+        <!--El Handler esta en LoginController-->
+        <property name="expiredUrl" value="/Handler" />
+    </bean>
+
+    <!--Autenticación estratégica de sesión-->
+    <bean id="sas" class="org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy">
+        <constructor-arg>
+            <list>
+                <bean class="org.springframework.security.web.authentication.session.ConcurrentSessionControlAuthenticationStrategy">
+                    <constructor-arg ref="sessionRegistry"/>
+                    <property name="maximumSessions" value="1" />
+                    <property name="exceptionIfMaximumExceeded" value="true" />
+                </bean>
+                <bean class="org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy">
+<!--                    <property name="alwaysCreateSession" value="true"/>
+                    <property name="migrateSessionAttributes" value="true"/>-->
+                </bean>
+                <bean class="org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy">
+                    <constructor-arg ref="sessionRegistry"/>
+                </bean>
+            </list>
+        </constructor-arg>
+    </bean>
+    <!--Registro de sesiones-->
+    <bean id="sessionRegistry" class="org.springframework.security.core.session.SessionRegistryImpl" />
+
+    <bean id="sessionExpirationFilter" class="com.sigsa.sisbc.config.SessionExpirationFilter">
+        <property name="requestNodeJS" ref="requestNodeJS"/>
+    </bean>
+    
+</beans>
