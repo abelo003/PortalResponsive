@@ -5,7 +5,7 @@
  */
 package com.gs.config;
 
-import com.sigsa.sisbc.classes.RequestNodeJS;
+//import com.sigsa.sisbc.classes.RequestNodeJS;
 import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -19,15 +19,15 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
  */
 public class ItemBasedLogoutSuccessHandler implements LogoutSuccessHandler{
     
-    private RequestNodeJS requestNodeJS;
+//    private RequestNodeJS requestNodeJS;
 
-    public RequestNodeJS getRequestNodeJS() {
-        return requestNodeJS;
-    }
+//    public RequestNodeJS getRequestNodeJS() {
+//        return requestNodeJS;
+//    }
 
-    public void setRequestNodeJS(RequestNodeJS requestNodeJS) {
-        this.requestNodeJS = requestNodeJS;
-    }
+//    public void setRequestNodeJS(RequestNodeJS requestNodeJS) {
+//        this.requestNodeJS = requestNodeJS;
+//    }
 
     @Override
     public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication a) throws IOException, ServletException {

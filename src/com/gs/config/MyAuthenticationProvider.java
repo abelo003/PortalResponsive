@@ -5,7 +5,7 @@
  */
 package com.gs.config;
 
-import com.sigsa.sisbc.classes.RequestNodeJS;
+//import com.sigsa.sisbc.classes.RequestNodeJS;
 import java.util.Iterator;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
@@ -34,7 +34,7 @@ public class MyAuthenticationProvider implements AuthenticationProvider{
     private ListUsersLockoutIntentFail listUsersLockoutIntentFail;
     private CustomJDBCDaoImpl customJDBCDaoImpl;
     private int intentosPosibles;
-    private RequestNodeJS requestNodeJS;
+//    private RequestNodeJS requestNodeJS;
     
     public void setUserServiceQuery(CustomJDBCDaoImpl userServiceQuery) {
         this.customJDBCDaoImpl = userServiceQuery;
@@ -48,9 +48,9 @@ public class MyAuthenticationProvider implements AuthenticationProvider{
         this.sessionRegistry = sessionRegistry;
     }
     
-    public void setRequestNodeJS(RequestNodeJS requestNodeJS) {
-        this.requestNodeJS = requestNodeJS;
-    }
+//    public void setRequestNodeJS(RequestNodeJS requestNodeJS) {
+//        this.requestNodeJS = requestNodeJS;
+//    }
     
     public UsuarioConIntentoFallido getUsuarioConIntentoFallido() {
         return usuarioConIntentoFallido;
