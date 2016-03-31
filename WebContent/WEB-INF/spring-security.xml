@@ -151,8 +151,9 @@
     <!--Registro de sesiones-->
     <bean id="sessionRegistry" class="org.springframework.security.core.session.SessionRegistryImpl" />
 
+<!-- 	FILTRO PARA SABER CUANDO SE DESTRUYE UNA OBJECTO SESION -->
     <bean id="sessionExpirationFilter" class="com.sigsa.sisbc.config.SessionExpirationFilter">
-        <property name="requestNodeJS" ref="requestNodeJS"/>
+<!--         <property name="requestNodeJS" ref="requestNodeJS"/> -->
     </bean>
     
 </beans>
